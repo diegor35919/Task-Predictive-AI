@@ -1,4 +1,4 @@
-// --- 1. LÓGICA DE AUTENTICACIÓN (Sin cambios) ---
+
 (function () {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -16,7 +16,7 @@ if (logoutButton) {
   });
 }
 
-// --- 2. CONSTANTES Y SELECTORES (Sin cambios) ---
+
 const API_URL = 'http://localhost:3000/api/v1'; 
 const token = localStorage.getItem('token'); 
 
@@ -26,7 +26,7 @@ const taskDescriptionInput = document.getElementById('task-description');
 const taskListContainer = document.getElementById('task-list-container');
 
 
-// --- 3. CRUD DE TAREAS (Función fetchTasks MODIFICADA) ---
+
 const fetchTasks = async () => {
   try {
     const response = await fetch(`${API_URL}/tasks`, {
@@ -48,11 +48,10 @@ const fetchTasks = async () => {
       throw new Error('La respuesta del servidor no es un array de tareas.');
     }
     
-    // "Pintamos" las tareas
+
     renderTasks(tasksArray);
     
-    // ¡YA NO LLAMAMOS A LA GRÁFICA DESDE AQUÍ!
-    // updateChart(tasksArray); // <-- LÍNEA ELIMINADA
+
 
   } catch (error) {
     console.error(error.message);
@@ -60,7 +59,7 @@ const fetchTasks = async () => {
   }
 };
 
-// --- renderTasks (Sin cambios) ---
+
 const renderTasks = (tasks) => {
   taskListContainer.innerHTML = ''; 
 
@@ -90,7 +89,7 @@ const renderTasks = (tasks) => {
   });
 };
 
-// --- create, update, delete (Sin cambios) ---
+
 if (taskForm) {
   taskForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
@@ -114,7 +113,7 @@ if (taskForm) {
       alert('¡Tarea creada!');
       taskTitleInput.value = ''; 
       taskDescriptionInput.value = ''; 
-      fetchTasks(); // Refresca la lista de tareas
+      fetchTasks(); 
 
     } catch (error) {
       console.error(error.message);
@@ -144,8 +143,7 @@ if (taskListContainer) {
         alert('Tarea eliminada.');
 
       } else if (isCompleteButton) {
-        // --- LÓGICA DE ACTUALIZACIÓN DE TAREA ---
-        // 1. Averiguamos el estado actual y el *opuesto*
+     
         const currentStatus = taskElement.dataset.status;
         let newStatus;
         if (currentStatus === 'pending') {
@@ -153,13 +151,11 @@ if (taskListContainer) {
         } else if (currentStatus === 'completed') {
           newStatus = 'pending'; 
         } else {
-          // Si estuviera "in_progress", la marcamos como "completed"
+  
           newStatus = 'completed';
         }
 
-        // 2. Hacemos el fetch (¡AQUÍ TUVE QUE CORREGIR ALGO!)
-        // Tu controlador PUT espera 'title' y 'status'. 
-        // Debemos enviar ambos para que no falle la validación.
+        
         const taskTitle = taskElement.querySelector('.task-info h3').textContent;
         
         await fetch(`${API_URL}/tasks/${taskId}`, {
@@ -169,16 +165,16 @@ if (taskListContainer) {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({ 
-            title: taskTitle, // Enviamos el título actual
-            status: newStatus  // Enviamos el nuevo estado
+            title: taskTitle, 
+            status: newStatus  
           }) 
         });
         alert('Tarea actualizada.');
       }
       
-      // Refrescamos ambas cosas
+      
       fetchTasks(); 
-      fetchHistoryStats(); // <-- ¡NUEVO! Refrescamos la gráfica también
+      fetchHistoryStats(); 
 
     } catch (error) {
       console.error(error);
@@ -187,13 +183,6 @@ if (taskListContainer) {
   });
 }
 
-// --- 4. LÓGICA DE LA NUEVA GRÁFICA DE LÍNEAS ---
-// (Esto reemplaza tu antigua función 'updateChart')
-
-/**
- * Busca los datos del historial de productividad
- * llamando al nuevo endpoint GET /api/v1/stats
- */
 const fetchHistoryStats = async () => {
   try {
     const response = await fetch(`${API_URL}/stats`, {
@@ -203,13 +192,13 @@ const fetchHistoryStats = async () => {
       }
     });
 
-    const data = await response.json(); // data = { ok: true, history: [...] }
+    const data = await response.json(); 
 
     if (!data.ok) {
       throw new Error(data.msg || 'Error al cargar historial.');
     }
 
-    // Enviamos los datos del historial a la nueva función de render
+    
     renderHistoryChart(data.history); 
 
   } catch (error) {
@@ -218,44 +207,41 @@ const fetchHistoryStats = async () => {
   }
 };
 
-/**
- * "Pinta" la gráfica de líneas en el canvas
- */
-let historyChart = null; // Variable para guardar la instancia
+
+let historyChart = null; 
 
 const renderHistoryChart = (historyData) => {
   
-  // 1. Preparamos los datos para Chart.js
+  
   const labels = historyData.map(item => {
-    // Formateamos la fecha (ej. '2025-11-10T00:00:00.000Z' -> '10/11')
+    
     const date = new Date(item.date);
-    // Usamos toLocaleDateString para un formato local (ej. 10/11)
+    
     return date.toLocaleDateString(undefined, { day: 'numeric', month: 'numeric' });
   });
   
   const dataPoints = historyData.map(item => item.completedCount);
 
-  // 2. Obtenemos el canvas
-  // ¡Asegúrate de que este ID exista en tu dashboard.html!
+
   const ctx = document.getElementById('history-chart').getContext('2d');
 
-  // 3. Destruimos la gráfica anterior si existe
+
   if (historyChart) {
     historyChart.destroy();
   }
 
-  // 4. Creamos la nueva gráfica de LÍNEAS
+
   historyChart = new Chart(ctx, {
-    type: 'line', // <-- ¡EL GRAN CAMBIO!
+    type: 'line', 
     data: {
-      labels: labels, // Eje X (Fechas)
+      labels: labels, 
       datasets: [{
         label: 'Tareas Completadas por Día',
-        data: dataPoints, // Eje Y (Cantidad)
+        data: dataPoints, 
         backgroundColor: 'rgba(0, 123, 255, 0.2)',
         borderColor: 'rgba(0, 123, 255, 1)',
         borderWidth: 2,
-        tension: 0.1 // Le da una curva suave
+        tension: 0.1 
       }]
     },
     options: {
@@ -284,8 +270,7 @@ const renderHistoryChart = (historyData) => {
   });
 };
 
-// --- 5. LLAMADA INICIAL (MODIFICADA) ---
-// (Se ejecuta cuando el script carga)
 
-fetchTasks(); // Carga la lista de tareas
-fetchHistoryStats(); // Carga la gráfica de historial
+
+fetchTasks(); 
+fetchHistoryStats(); 
